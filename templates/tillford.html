@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Reingold-Tilford Tree Layout</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .navbar {
+            background-color: black;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            border-radius: 10px;
+        }
+
+        .navbar-container {
+            display: flex;
+            justify-content: center;
+        }
+
+        body {
+            background-color: #d9d9d9;
+        }
+
+        .node circle {
+            fill: #1f77b4;
+            r: 15;
+        }
+
+        .node text {
+            font: 12px sans-serif;
+        }
+
+        .link {
+            fill: none;
+            stroke: #555;
+            stroke-opacity: 0.7;
+            stroke-width: 2px;
+        }
+
+        svg {
+            position: absolute;
+            top: 200px;
+            left: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-container">
+            <h1>Reingold-Tilford Tree Layout</h1>
+        </div>
+    </div>
+    <svg width="960" height="500"></svg>
+    <script>
+        var treeData = JSON.parse('{{ graph_data|safe }}');
+
+        var stratify = d3.stratify()
+            .id(function(d) { return d.id; })
+            .parentId(function(d) {
+                var link = treeData.links.find(l => l.target === d.id);
+                return link ? link.source : null;
+            });
+
+        var root = stratify(treeData.nodes)
+            .sort(function(a, b) { return (a.height - b.height) || a.id.localeCompare(b.id); });
+
+        var treeLayout = d3.tree()
+            .size([400, 400]);
+
+        treeLayout(root);
+
+        var svg = d3.select("svg"),
+            g = svg.append("g").attr("transform", "translate(40,20)");
+
+        var link = g.selectAll(".link")
+            .data(root.links())
+            .enter()
+            .append("path")
+            .attr("class", "link")
+            .attr("d", d3.linkVertical()
+                .x(function(d) { return d.x; })
+                .y(function(d) { return d.y; }));
+
+        var node = g.selectAll(".node")
+            .data(root.descendants())
+            .enter()
+            .append("g")
+            .attr("class", function(d) {
+                return "node" + (d.children ? " node--internal" : " node--leaf");
+            })
+            .attr("transform", function(d) {
+                return "translate(" + d.x + "," + d.y + ")";
+            });
+
+        node.append("circle")
+            .attr("r", 40)
+            .on("click", highlightChildren);
+
+        node.append("text")
+            .attr("dy", 3)
+            .attr("x", function(d) { return d.children ? 2 : -2; })
+            .style("text-anchor", function(d) {
+                return d.children ? "end" : "start";
+            })
+            .text(function(d) { return d.id; });
+
+        function highlightChildren(event, d) {
+            svg.selectAll(".node circle").style("fill", "#1f77b4");
+            svg.selectAll(".link").style("stroke", "#555");
+
+            d3.select(this).select("circle").style("fill", "orange");
+
+            svg.selectAll(".link").filter(function(dl) {
+                return dl.source === d;
+            }).style("stroke", "red");
+
+            svg.selectAll(".node circle").filter(function(dCircle) {
+                return dCircle.ancestors().includes(d);
+            }).style("fill", "orange");
+        }
+    </script>
+</body>
+</html>

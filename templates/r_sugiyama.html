@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Static Vertical Graph Layout</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .navbar {
+            background-color: black;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            border-radius: 10px; 
+        }
+
+    
+        .navbar-container {
+            display: flex;
+            justify-content: center;
+        }
+        .node {
+            fill: #66b3ff;
+            stroke: #005c99;
+            stroke-width: 2px;
+        }
+        .link {
+            fill: none;
+            stroke: #999;
+            stroke-opacity: 0.6;
+            stroke-width: 2px;
+        }
+        body {
+            background-color: #d9d9d9;
+        }
+        .highlighted {
+            fill: yellow; 
+        }
+        .highlighted-link {
+            stroke: yellow; 
+        }
+
+     
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-container">
+            <h1>Radial Sugiyama Layout</h1>
+        </div>
+    </div>
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh;">
+        <svg id="graph-svg" width="1600" height="600"></svg>
+        <button onclick="resetHighlight()">Reset</button>
+    <script>
+//         const graphData = {
+//   'nodes': [{'id': 'A'}, {'id': 'B'}, {'id': 'C'}, {'id': 'D'}, {'id': 'E'}, {'id': 'F'}, {'id': 'G'}, {'id': 'H'}],
+//   'links': [{'source': 'A', 'target': 'B'}, {'source': 'A', 'target': 'E'}, {'source': 'B', 'target': 'C'}, {'source': 'B', 'target': 'D'}, {'source': 'D', 'target': 'E'}, {'source': 'F', 'target': 'A'}, {'source': 'F', 'target': 'C'}, {'source': 'F', 'target': 'G'}, {'source': 'H', 'target': 'F'}]
+// };
+var graphData = JSON.parse('{{ graph_data|safe }}');
+// Step 1: Create an adjacency list to represent the graph
+const adjacencyList = {};
+graphData.nodes.forEach(node => {
+  adjacencyList[node.id] = [];
+});
+graphData.links.forEach(link => {
+  adjacencyList[link.source].push(link.target);
+});
+
+// Step 2: Find the root nodes (nodes with no incoming links)
+const findRoots = () => {
+  const roots = [];
+  Object.keys(adjacencyList).forEach(nodeId => {
+      if (!graphData.links.some(link => link.target === nodeId)) {
+          roots.push(nodeId);
+      }
+  });
+  return roots;
+};
+
+// Step 3: Modified depth-first search to find the topological ordering
+const topologicalOrder = [];
+const visitedNodes = {};
+
+const dfs = (nodeId) => {
+  visitedNodes[nodeId] = true;
+  adjacencyList[nodeId].forEach(childId => {
+      if (!visitedNodes[childId]) {
+          dfs(childId);
+      }
+  });
+  topologicalOrder.unshift(nodeId);
+};
+
+// Step 4: Start the DFS from the root nodes
+const roots = findRoots();
+roots.forEach(root => {
+  if (!visitedNodes[root]) {
+      dfs(root);
+  }
+});
+
+// Step 5: Initialize an array to store the path lengths
+const pathLengths = {};
+topologicalOrder.forEach(nodeId => {
+  pathLengths[nodeId] = -Infinity;
+});
+
+// Step 6: Calculate the longest path and store path lengths
+topologicalOrder.forEach(nodeId => {
+  if (pathLengths[nodeId] === -Infinity) {
+      pathLengths[nodeId] = 0;
+  }
+  adjacencyList[nodeId].forEach(childId => {
+      const newPathLength = pathLengths[nodeId] + 1;
+      if (newPathLength > pathLengths[childId]) {
+          pathLengths[childId] = newPathLength;
+      }
+  });
+});
+
+// Step 7: Find the end node with no outgoing edges
+let endNode = null;
+topologicalOrder.forEach(nodeId => {
+  if (adjacencyList[nodeId].length === 0) {
+      endNode = nodeId;
+  }
+});
+
+// Step 8: Create layers based on the longest path
+const layers = [];
+let currentNode = endNode;
+while (currentNode !== null) {
+  layers.unshift([currentNode]);
+  const parents = graphData.links
+      .filter(link => link.target === currentNode)
+      .map(link => link.source);
+  currentNode = parents.length > 0 ? parents[0] : null;
+}
+
+
+
+
+  
+      const svg = d3.select("svg");
+        const width = +svg.attr("width");
+        const height = +svg.attr("height");
+
+      
+        const layerSpacing = height / (layers.length + 1);
+        const nodeSpacing = 90;
+
+      
+        const nodes = [];
+        const links = [];
+        const radius = d3.scaleLinear()
+    .domain([0, d3.max(layers, (layer, i) => i)])
+    .range([50, Math.min(width, height) / 2 - 100]);
+    layers.forEach((layer, layerIndex) => {
+    const angleStep = (2 * Math.PI) / layer.length;
+    layer.forEach((nodeId, nodeIndex) => {
+        const angle = angleStep * nodeIndex;
+        const x = width / 2 + radius(layerIndex) * Math.cos(angle);
+        const y = height / 2 + radius(layerIndex) * Math.sin(angle);
+        nodes.push({ id: nodeId, x, y });
+
+                const parents = graphData.links
+                    .filter(link => link.target === nodeId)
+                    .map(link => link.source);
+
+                parents.forEach(parentId => {
+                    links.push({ source: parentId, target: nodeId });
+                });
+            });
+        });
+        graphData.nodes.forEach(node => {
+    if (!nodes.find(n => n.id === node.id)) {
+        const parentLink = graphData.links.find(link => link.target === node.id);
+        if (parentLink) {
+            const parent = nodes.find(n => n.id === parentLink.source);
+            let x = parent.x + nodeSpacing; 
+
+            
+            while (nodes.some(n => n.y === parent.y && Math.abs(n.x - x) < nodeSpacing)) {
+                x += nodeSpacing; 
+            }
+
+            const y = parent.y;
+            nodes.push({ id: node.id, x, y });
+            links.push({ source: parent.id, target: node.id });
+        } else {
+           
+            nodes.push({ id: node.id, x: width / 2, y: 0 });
+        }
+    }
+});
+     
+        graphData.nodes.forEach(node => {
+            if (!nodes.find(n => n.id === node.id)) {
+                const parentLink = graphData.links.find(link => link.target === node.id);
+                if (parentLink) {
+                    const parent = nodes.find(n => n.id === parentLink.source);
+                    const x = parent.x + nodeSpacing;
+                    const y = parent.y;
+                    nodes.push({ id: node.id, x, y });
+                    links.push({ source: parent.id, target: node.id });
+                } else {
+                   
+                    nodes.push({ id: node.id, x: width / 2, y: 0 });
+                }
+            }
+        });
+
+     
+        links.forEach(link => {
+  link.source = nodes.find(n => n.id === link.source);
+  link.target = nodes.find(n => n.id === link.target);
+});
+
+
+
+const link = svg.selectAll(".link")
+  .data(links)
+  .enter().append("path")
+  .attr("class", "link")
+  .attr("d", d => {
+      const dx = d.target.x - d.source.x,
+            dy = d.target.y - d.source.y,
+            dr = Math.sqrt(dx * dx + dy * dy);
+      return `M${d.source.x-570},${d.source.y+70}A${dr},${dr-500} 0 0,1 ${d.target.x-570},${d.target.y+70}`;
+  });
+        
+
+
+
+        const node = svg.selectAll(".node")
+            .data(nodes)
+            .enter().append("circle")
+            .attr("class", "node")
+            .attr("r", 20);
+
+    
+        const label = svg.selectAll(".label")
+            .data(nodes)
+            .enter().append("text")
+            .attr("class", "label")
+            .attr("dy", 0)
+            .text(d => d.id);
+
+       
+            node.attr("cx", d => d.x-570)
+    .attr("cy", d => d.y+70);
+
+label.attr("x", d => d.x-570)
+    .attr("y", d => d.y+70)
+    .style("text-anchor", "middle")
+    .attr("alignment-baseline", "central");
+         // ...
+
+
+function resetHighlight() {
+    svg.selectAll(".node")
+        .style("fill", "#66b3ff") 
+        .style("stroke", "#005c99"); 
+
+    svg.selectAll(".link")
+        .style("stroke", "#999") 
+        .style("stroke-opacity", 0.6); 
+}
+
+
+function highlightNodeAndConnected(nodeId) {
+
+    resetHighlight();
+
+    svg.selectAll(".node")
+        .filter(d => d.id === nodeId)
+        .style("fill", "orange"); 
+
+ 
+    svg.selectAll(".link")
+        .filter(d => d.source.id === nodeId || d.target.id === nodeId)
+        .style("stroke", "red") 
+        .style("stroke-opacity", 1)
+        .each(function(d) {
+            svg.selectAll(".node")
+                .filter(node => node.id === d.source.id || node.id === d.target.id)
+                .style("fill", "orange");
+        });
+}
+
+node.on("click", function(event, d) {
+    highlightNodeAndConnected(d.id);
+});
+
+            
+    </script>
+</body>
+</html>
+

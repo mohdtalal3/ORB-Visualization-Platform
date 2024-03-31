@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            background-color: #F56E00;
+        }
+
+        #gif-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            display: none;
+        }
+
+        #gif-container img {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #visualization {
+            text-align: center;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .letter {
+            font-family: Arial, sans-serif;
+            font-size: 100px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            text-anchor: middle;
+            dominant-baseline: middle;
+            letter-spacing: -2px;
+            position: absolute;
+            top: -100px;
+        }
+
+        #b1 {
+            position: absolute;
+            left: 800px;
+            top: 600px;
+            background-color: rgb(154, 214, 154);
+            color: white;
+            transition: transform 0.2s, background-color 0.2s;
+            padding: 15px 30px;
+            border: none;
+            cursor: pointer;
+            border-radius: 20px;
+        }
+
+        #b1:hover {
+            background-color: lightgreen;
+        }
+
+        #b1.clicked {
+            transform: scale(1.2);
+        }
+
+        svg {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+<div id="visualization"></div>
+
+<script src="https://d3js.org/d3.v6.min.js"></script>
+
+<div id="content1">
+    <script>
+        var data = "Welcome to ORB".split('');
+        var svg = d3.select("#visualization").append("svg")
+            .attr("width", '100%')
+            .attr("height", '100%');
+
+        function getRandomColor() {
+            var letters = '0123456789ABCDEF';
+            var color = '#';
+            for (var i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        svg.selectAll("text")
+            .data(data)
+            .enter()
+            .append("text")
+            .text(function (d) {
+                return d;
+            })
+            .attr("class", "letter")
+            .attr("x", (d, i) => i * 70 + (window.innerWidth - data.length * 70) / 2)
+            .attr("y", -100)
+            .attr("fill", () => getRandomColor())
+            .transition()
+            .duration(1000)
+            .delay((d, i) => i * 300)
+            .attr("y", '50%')
+            .ease(d3.easeBounce)
+            .attr("y", (d, i) => {
+                if (i % 2 === 0) {
+                    return '48%';
+                } else {
+                    return '52%';
+                }
+            });
+
+        d3.select("#b1")
+            .style("position", "absolute")
+            .style("left", "800px")
+            .style("top", "600px");
+
+        function gotonext() {
+            document.body.style.backgroundColor = "transparent";
+            document.getElementById("visualization").style.display = "none";
+            document.getElementById("content1").style.display = "none";
+            document.getElementById("content").style.display = "none";
+            document.getElementById("gif-container").style.display = "block";
+            setTimeout(function () {
+                window.location.href = '/index';
+            }, 3000);
+        }
+    </script>
+</div>
+<div id="gif-container">
+    <img src="/static/orb.gif" alt="Loading..." />
+</div>
+<div id="content">
+    <button id="b1" class="round-button" onclick="gotonext()">Click</button>
+</div>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Diagrams</title>
+
+    <style>
+        body {
+            background-image: url('/static/cover.png');
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+        .bottom-text {
+            position: absolute;
+            top: 0px;
+            left: 590px;
+        }
+        #b1 {
+            position: absolute;
+            left: 560px;
+            top: 180px;
+            background-color: #D3618D;
+            color: white;
+            transition: transform 0.2s, background-color 0.2s;
+            padding: 15px 90px;
+            border: none;
+            cursor: pointer;
+            border-radius: 20px;
+        }
+
+        #b1:hover {
+            background-color: #5a4649;
+        }
+
+        #b1.clicked {
+            transform: scale(1.2);
+        }
+
+        #b2 {
+            position: absolute;
+            left: 540px;
+            top: 100px;
+            background-color: #D3618D;
+            color: white;
+            transition: transform 0.2s, background-color 0.2s;
+            padding: 15px 90px;
+            border: none;
+            cursor: pointer;
+            border-radius: 20px;
+        }
+
+        #b2:hover {
+            background-color: #5a4649;
+        }
+
+        #b2.clicked {
+            transform: scale(1.2);
+        }
+
+        svg {
+            display: block;
+        }
+
+        #gif-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+
+        .bottom-text {
+            position: absolute;
+            top: 0;
+            left: 570px;
+        }
+    </style>
+</head>
+<body>
+<div id="content">
+    <h1 class="bottom-text">Generate DAG Diagrams</h1>
+    <form id="generate-form" method="POST" action="/dag_select">
+        <input type="hidden" id="diagram_type" name="diagram_type" value="">
+        <button id="b1" class="round-button" type="button" onclick="generateDiagram('sugiyama')">Generate Sugiyama Layout</button>
+        <button id="b2" class="round-button" type="button" onclick="generateDiagram('r_sugiyama')">Generate Radial Sugiyama Layout</button>
+    </form>
+</div>
+
+<div id="gif-container">
+    <img src="/static/c.gif" alt="Loading..." />
+</div>
+
+<script>
+    function generateDiagram(diagramType) {
+        document.getElementById("diagram_type").value = diagramType;
+        document.body.style.backgroundImage = "none";
+        document.getElementById("content").style.display = "none";
+        document.getElementById("gif-container").style.display = "block";
+
+        setTimeout(function () {
+            document.getElementById("gif-container").style.display = "none";
+            document.getElementById("generate-form").submit();
+        }, 2000);
+    }
+</script>
+</body>
+</html>

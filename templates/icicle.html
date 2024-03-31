@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icicle Tree Layout</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .navbar {
+            background-color: black;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            border-radius: 10px;
+        }
+
+        .navbar-container {
+            display: flex;
+            justify-content: center;
+        }
+
+        .node {
+            fill: lightblue;
+            stroke: #fff;
+        }
+
+        body {
+            background-color: #d9d9d9;
+        }
+
+        .label {
+            fill: black;
+            font: 10px sans-serif;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-container">
+            <h1>Icicle Tree Layout</h1>
+        </div>
+    </div>
+    <svg width="600" height="600" id="icicle-diagram"></svg>
+
+    <script>
+        var graphData = JSON.parse('{{ graph_data|safe }}');
+
+        function countChildren(node) {
+            var count = 0;
+            if (node.children) {
+                node.children.forEach(function (child) {
+                    count += countChildren(child);
+                });
+            } else {
+                count = 1;
+            }
+            node.value = count;
+            return count;
+        }
+
+        var stratify = d3.stratify()
+            .id(d => d.id)
+            .parentId(d => {
+                var link = graphData.links.find(link => link.target === d.id);
+                return link ? link.source : null;
+            });
+
+        var root = stratify(graphData.nodes);
+        countChildren(root);
+
+        function computePositions(node, depth = 0, x = 0) {
+            node.depth = depth;
+            node.x = x;
+            if (node.children) {
+                let offsetX = x;
+                node.children.forEach(function (child) {
+                    computePositions(child, depth + 1, offsetX);
+                    offsetX += child.value;
+                });
+            }
+            node.x1 = node.x + node.value;
+            node.y = node.depth * (400 / root.height);
+            node.y1 = (node.depth + 1) * (400 / root.height);
+        }
+
+        computePositions(root);
+
+        var svg = d3.select("#icicle-diagram");
+
+        var node = svg.selectAll("g")
+            .data(root.descendants())
+            .enter().append("g")
+            .attr("transform", d => `translate(${d.x * (600 / root.value)},${d.y})`);
+
+        node.append("rect")
+            .attr("class", "node")
+            .attr("width", d => (d.x1 - d.x) * (600 / root.value))
+            .attr("height", d => d.y1 - d.y);
+
+        node.append("text")
+            .attr("class", "label")
+            .attr("x", d => ((d.x1 - d.x) * (600 / root.value)) / 2)
+            .attr("y", d => (d.y1 - d.y) / 2)
+            .attr("dy", "0.35em")
+            .text(d => d.data.id);
+
+        function resetHighlights() {
+            svg.selectAll(".node").style("fill", "lightblue");
+        }
+
+        function highlightNodeAndConnected(node) {
+            resetHighlights();
+
+            svg.selectAll(".node")
+                .filter(d => d === node || node.ancestors().includes(d) || node.descendants().includes(d))
+                .style("fill", "orange");
+        }
+
+        node.on("click", function(event, d) {
+            highlightNodeAndConnected(d);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>General Graph</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .navbar {
+            background-color: black;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            border-radius: 10px;
+        }
+
+        .navbar-container {
+            display: flex;
+            justify-content: center;
+        }
+
+        .link {
+            stroke: #999;
+            stroke-opacity: 0.6;
+        }
+
+        body {
+            background-color: #d9d9d9;
+        }
+
+        .node {
+            fill: #1f77b4;
+            stroke: #fff;
+            stroke-width: 2px;
+        }
+
+        svg {
+            position: absolute;
+            top: 200px;
+            left: 500px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-container">
+            <h1>Grid Layout</h1>
+        </div>
+    </div>
+    <svg width="800" height="600" id="graph-container"></svg>
+
+    <script>
+        var graph_data = JSON.parse('{{ graph_data|safe }}');
+
+        var svg = d3.select("#graph-container"),
+            width = +svg.attr("width"),
+            height = +svg.attr("height");
+
+        var cols = Math.ceil(Math.sqrt(graph_data.nodes.length));
+        var rows = Math.ceil(graph_data.nodes.length / cols);
+
+        var nodeSize = 50;
+        var padding = 40;
+
+        var xScale = d3.scaleLinear().domain([0, cols - 1]).range([padding, width - padding]);
+        var yScale = d3.scaleLinear().domain([0, rows - 1]).range([padding, height - padding]);
+
+        var links = svg.selectAll(".link")
+            .data(graph_data.links)
+            .enter().append("line")
+            .attr("class", "link")
+            .style("stroke", "#999")
+            .style("stroke-opacity", 0.6)
+            .attr("x1", function(d) {
+                var sourceCol = graph_data.nodes.findIndex(function(node) {
+                    return node.id === d.source;
+                }) % cols;
+                return xScale(sourceCol);
+            })
+            .attr("y1", function(d) {
+                var sourceRow = Math.floor(graph_data.nodes.findIndex(function(node) {
+                    return node.id === d.source;
+                }) / cols);
+                return yScale(sourceRow);
+            })
+            .attr("x2", function(d) {
+                var targetCol = graph_data.nodes.findIndex(function(node) {
+                    return node.id === d.target;
+                }) % cols;
+                return xScale(targetCol);
+            })
+            .attr("y2", function(d) {
+                var targetRow = Math.floor(graph_data.nodes.findIndex(function(node) {
+                    return node.id === d.target;
+                }) / cols);
+                return yScale(targetRow);
+            });
+
+        var nodes = svg.selectAll(".node")
+            .data(graph_data.nodes)
+            .enter().append("circle")
+            .attr("class", "node")
+            .attr("r", nodeSize / 2)
+            .style("fill", "#1f77b4")
+            .style("stroke", "#fff")
+            .style("stroke-width", "2px")
+            .attr("cx", function (d, i) {
+                var col = i % cols;
+                return xScale(col);
+            })
+            .attr("cy", function (d, i) {
+                var row = Math.floor(i / cols);
+                return yScale(row);
+            });
+
+        var labels = svg.selectAll(".label")
+            .data(graph_data.nodes)
+            .enter().append("text")
+            .attr("class", "label")
+            .text(function (d) { return d.id; })
+            .style("font-size", "12px")
+            .style("text-anchor", "middle")
+            .style("dominant-baseline", "central")
+            .attr("x", function (d, i) {
+                var col = i % cols;
+                return xScale(col);
+            })
+            .attr("y", function (d, i) {
+                var row = Math.floor(i / cols);
+                return yScale(row);
+            });
+
+        function resetHighlights() {
+            svg.selectAll(".link").style("stroke", "#999");
+            svg.selectAll(".node").style("fill", "#1f77b4");
+        }
+
+        function highlightNodeAndLinks(nodeId) {
+            resetHighlights();
+
+            nodes.filter(d => d.id === nodeId)
+                .style("fill", "orange");
+
+            links.filter(d => d.source === nodeId || d.target === nodeId)
+                .style("stroke", "red")
+                .each(function(d) {
+                    nodes.filter(node => node.id === (d.source === nodeId ? d.target : d.source))
+                        .style("fill", "orange");
+                });
+        }
+
+        nodes.on("click", function(event, d) {
+            highlightNodeAndLinks(d.id);
+        });
+    </script>
+</body>
+</html>
