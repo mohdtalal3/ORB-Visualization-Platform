@@ -1,8 +1,3 @@
-```markdown
-<style>
-  h1 { font-size: 32px; }
-  h2 { font-size: 28px; }
-</style>
 
 # ORB: Visualization Platform
 
