@@ -21,4 +21,3 @@ Run `app.py` to open the web view of the ORB platform. Upload your data files co
 - `templates/`: Contains HTML templates for visualization.
 - `files/`: Contains files of adjacency matrix or other required data files.
 - `static/`: Contains images and CSS files for styling.
-```
