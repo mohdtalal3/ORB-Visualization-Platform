@@ -4,6 +4,11 @@
 ## Description
 ORB is a visualization platform that allows users to explore various visualization layouts such as icicle, chord, Tillford, Sugiyama, grid layout, and radial Sugiyama layout. It provides a user-friendly interface to interact with different visualization styles, enabling users to gain insights from their data through dynamic and interactive visual representations.
 
+## Video 
+
+https://github.com/mohdtalal3/ORB-Visualization-Platform/assets/139225415/016a2556-e79d-4808-9a1c-5cbdeb3276a7
+
+
 ## Installation
 To install the dependencies, use the following command:
 
